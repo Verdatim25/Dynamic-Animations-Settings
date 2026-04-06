@@ -63,11 +63,17 @@ NOTE: "uses_allowed" is true by default
 SAMPLES
 
 Here's a sample section:
+
 	[flask]
+	
 	snd = interface\item_usage\new_drink_flask
+
 	anm = item_ga_flask
+	
 	cam = itemuse_anm_effects\sexo_flask_drink.anm
+	
 	tm = 7250
+	
 	helm = false
 
 Explanation:
