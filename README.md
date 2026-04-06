@@ -85,16 +85,24 @@ For example if you want the effect to apply after 2 seconds, then your tm value 
 helm: stands for helmet. Determines whether or not in strict fdda mode if the item can be used when a helmet is equipped. Here it is false because you cannot drink from a flask with a helmet on. If set to true, then the item will be able to be used if in strict FDDA mode AND wearing a helmet. Does nothing if strict FDDA mode is off.
 
 Sample anm section:
+
 	[item_ga_flask_hud]
+	
 	hud_fov                     = 0.8
+	
 	hands_position				= 0.0,-0.02,0.14
+	
 	hands_orientation			= 0.0,0.0,0.0
+	
 	hands_position_16x9			= 0.0,-0.02,0.14
+	
 	hands_orientation_16x9		= 0.0,0.0,0.0
+	
 	item_visual             	= dynamics\flask\wpn_water_flask_hud.ogf
+	
 	anm_ea_show		= flask_rework_hand_drink, flask_rework_drink
 	
-its the same as any hud suction, one thing to note however is that your anm NEEDS to be anm_ea_show or else it wont play.
+its the same as any hud section, one thing to note however is that your anm NEEDS to be anm_ea_show or else it wont play.
 Yes theoretically you could point to any hud section and it should work as long as it includes anm_ea_show.
 This means if you give a weapon an anm_ea_show then it should theoretically work, but dont quote me on that
 Just in case you dont know, first string in anm_ea_show is the hand animation, the second is the item animation.
