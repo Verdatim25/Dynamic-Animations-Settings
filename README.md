@@ -77,6 +77,7 @@ snd: its the sound played when using the item, just the direct path to the sound
 anm: its the animation section but with "_hud" removed, needs to be created under mod_system_*.ltx, sample below. In this case the anm will point to "item_ga_flask_hud" and NOT "item_ga_flask", keep this in mind!
 
 cam: The camera animation; i.e. the animation added to the camera when the animation is playing. Just the direct path to the .anm starting from the “anims” folder
+
 tm: timing, i.e. the time taken for the effect application. The og script is pretty weird. to get the correct timing here you have to take the timing (in seconds) that you want the effect to apply, then multiply it by a thousand and divide it by 0.367, this final timing will be the number you put in tm
 
 For example if you want the effect to apply after 2 seconds, then your tm value needs to be (2*1000) / 0.367 which is roughly 5450, set your tm = 5450 and it should be good to go!
