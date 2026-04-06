@@ -1,0 +1,272 @@
+--[[ 
+DYNAMIC ANIMATION SETTINGS: Major Rework by Verdatim
+
+Base script by Archangel
+
+Description:
+Dynamically changes FDDA item use animation settings via scripting
+Requires FDDA Redone (dont want to include fdda redone script here, its not mine)
+
+CREDITS:
+Archangel - For original script, enhanced for better functionality
+Lizzardman – original FDDA mutator logic, for the function `get_template_action_play_animation_fdda_config(item_section)`
+
+Below is a guide assuming you know next to nothing about how to set regular FDDA anims
+It does assume you know how to set up regular anims
+if you dont want to read it (and your using notepad++ with language set to lua) press the minus at the top left to fold this section
+
+
+SET UP GUIDE:
+Quick Note: if the script cannot find the new section, it just uses the base section for the item
+- USES GUIDE
+This script allows for there to be different animations and settings for different uses, heres how you set it up
+Create a new mod_animations_settings_*.ltx file
+Create a new section for the altered anim that is in the format [item_section]_use_[number]; where [item_section] is the item_section anim you want to change, and number is the uses in the item.
+For example, if you want to change the animation of the flask use when its its last use then create a new section called "flask_use_1". This anim will then play when the item is left with one use
+If you want to change the animation when the uses left in the flask is 2, just create a new section called "flask_use_2".
+For 3, create a new section called "flask_use_3"
+
+- VARIANTS GUIDE
+This script also allows variants to exist, heres how to set it up.
+Under the animations settings section you want to edit, simply add a "variants = [animation_section_name1], [animation_section_name2], ... , [animation_section_name3]" where your
+animation_section is another set of animation settings, the script will then randomly choose between the animations equally. If you want one animation to play more than another, simply add its 
+entry more than once.
+For example, if you want [flask] to sometimes play the [water_quality] anim or the [tea] anim, (doesnt change effect btw), then do this in your mod_animations_settings_*.ltx
+![flask]
+variants = water_quality, tea
+This will make the [flask] item play the [flask] anim a third of the time, [water_quality] another third of the time, and [tea] the last third of the time.
+Note that this can be stacked with the uses modifier, for example if [flask_use_1] has variants it will play those variants by themselves only when the flask is at its last use.
+
+
+Order Of Operations:
+The script first checks if the section with [item_use_(current_item_uses)] exists, and THEN checks for animation variants under the NEW section if it exists, not the other way around.
+Let's say for example your using a flask with 1 use left and you have a [flask] section like this
+[flask]
+...
+variants = tea
+
+BUT you also have a [flask_use_1] section added like this:
+[flask_use_1]
+...
+variants = 
+
+Then the variants of [flask] WILL NOT BE CONSIDERED. If you want the [flask_use_1] section or other use_number sections to not be considered, put "uses_allowed = false" under the [flask] animation settings.
+So it will look like this:
+[flask]
+...
+variants = tea
+uses_allowed = false
+
+This will make the script NEVER consider the uses for this specific animation settings section. Ideally you could delete the sections but this is a fallback just in case. 
+NOTE: "uses_allowed" is true by default
+
+Otherwise, if you want [flask_use_1] to inherit the variants from [flask] you can just use the base ltx inheritance syntax ":", or set the variants yourself.
+[flask_use_1]:flask
+...
+; will make the variants (and other values) from [flask] be transferred to the section [flask_use_1]
+
+
+Here's a sample section:
+	[flask]
+	snd = interface\item_usage\new_drink_flask
+	anm = item_ga_flask
+	cam = itemuse_anm_effects\sexo_flask_drink.anm
+	tm = 7250
+	helm = false
+
+Explanation
+snd: its the sound played when using the item, just the direct path to the sound starting from the “sounds” folder
+anm: its the animation section but with "_hud" removed, needs to be created under mod_system_*.ltx, sample below. 
+	In this case the anm will point to "item_ga_flask_hud" and NOT "item_ga_flask", keep this in mind!
+cam: The camera animation; i.e. the animation added to the camera when the animation is playing. Just the direct path to the .anm starting from the “anims” folder
+tm: timing, i.e. the time taken for the effect application. The og script is pretty weird. to get the correct timing here you have to take the timing (in seconds)
+	that you want the effect to apply, then multiply it by a thousand and divide it by 0.367, this final timing will be the number you put in tm
+For example if you want the effect to apply after 2 seconds, then your tm value needs to be (2*1000) / 0.367 which is roughly 5450, set your tm = 5450 and it should be good to go!
+helm: stands for helmet. Determines whether or not in strict fdda mode if the item can be used when a helmet is equipped. Here it is false because you cannot drink
+	from a flask with a helmet on. If set to true, then the item will be able to be used if in strict FDDA mode AND wearing a helmet. Does nothing if strict FDDA mode is off.
+
+Sample anm section:
+	[item_ga_flask_hud]
+	hud_fov                     = 0.8
+	hands_position				= 0.0,-0.02,0.14
+	hands_orientation			= 0.0,0.0,0.0
+	hands_position_16x9			= 0.0,-0.02,0.14
+	hands_orientation_16x9		= 0.0,0.0,0.0
+	item_visual             	= dynamics\flask\wpn_water_flask_hud.ogf
+	anm_ea_show					= flask_rework_hand_drink, flask_rework_drink
+	
+its the same as any hud suction, one thing to note however is that your anm NEEDS to be anm_ea_show or else it wont play.
+Yes theoretically you could point to any hud section and it should work as long as it includes anm_ea_show.
+This means if you give a weapon an anm_ea_show then it should theoretically work, but dont quote me on that
+Just in case you dont know, first string in anm_ea_show is the hand animation, the second is the item animation.
+
+]]
+
+-- OLD CREDITS:
+
+		--==================================================
+		--  Made by: Archangel
+		--  If you edit this file, add your name or the last editor to the Credits.
+		--
+		--  Description:
+		--  Dynamically changes item use animation via scripting and hud
+		--  FDDA and FDDA Redone safe.
+		--
+		--  Credits:
+		--  Lizardman – original FDDA mutator logic
+		--  Verdatim  – animations + initial concept
+		--
+		--==================================================
+
+-- verdatim!!! (credits to fdda team and lizzardman because im cough cough 'reusing' code)
+local ini_eff = {}
+
+function initialize()
+    ini_eff = ini_file("items\\items\\animations_settings.ltx")
+end
+-- kind of funny to make a separate function for one purpose but oh well
+
+
+
+local DEBUG = true
+local function printdbg(fmt, ...)
+    if DEBUG then
+        printf("[Dynamic_animations] " .. string.format(fmt, ...))
+    end
+end
+--------------------------------------------------
+-- Track which item is about to be used (by section)
+
+-- redone due to weird tracking issues because of callback order, this monkey patch fights with fdda redone but since fdda redone calls the original function first its completely fine! this will always call first even if it overrides second
+--------------------------------------------------
+local pending_item_by_section = {}
+
+
+originalAOIBU = itms_manager.actor_on_item_before_use
+
+itms_manager.actor_on_item_before_use = function (obj, flags)
+    local section = obj:section()
+    pending_item_by_section[section] = obj:id()
+    printdbg("Captured: section=%s, id=%d", section, obj:id())
+    originalAOIBU(obj,flags)
+end
+--------------------------------------------------
+-- Hook FDDA's action template creation 
+-- 
+--(i.e. replace the original function to allow for modification later!) - verdatim
+--------------------------------------------------
+local function hook_fdda()
+    if not liz_fdda_redone_consumables then
+        printdbg("ERROR: liz_fdda_redone_consumables not found")
+        return false
+    end
+    
+    local baseGTAPAFC = liz_fdda_redone_consumables.get_template_action_play_animation_fdda_config
+    
+    liz_fdda_redone_consumables.get_template_action_play_animation_fdda_config = function(section)
+        printdbg(">>> Template called for section: %s", section)
+        
+        -- Let FDDA build the action template normally
+        local action = baseGTAPAFC(section)
+        
+        -- Try to get the item ID for this section
+        local item_id = pending_item_by_section[section]
+        
+        if item_id and action and action.sec then
+            local item = level.object_by_id(item_id)
+			printdbg("item_id and action and action.sec is true!")
+            
+            if item and item.get_remaining_uses then
+                local ok, uses = pcall(item.get_remaining_uses, item)
+            
+                if ok and uses then
+					-- Verdatim: Next part is entirely my code :( . oh well it still uses some of the code from archangel
+					local item_section = section
+					local new_item_section = tostring(item_section) .. "_use_" .. tostring(uses)
+					local final_item_section
+					if ini_eff:section_exist(new_item_section) then
+						uses_allowed = ini_eff:r_string_ex(item_section, "uses_allowed")
+						if uses_allowed == "false" then
+							final_item_section = item_section
+							printdbg("uses_allowed is false! Setting final_item_section to %s", final_item_section)
+						else
+							final_item_section = new_item_section
+						end
+					else
+						final_item_section = item_section
+					end
+					printdbg("final_item_section is %s!", final_item_section)
+					local var = ini_eff:r_string_ex(final_item_section, "variants")
+					if var then
+						local variants = str_explode(var, ",") or {}
+						table.insert(variants, 1, final_item_section)
+						printdbg("Table of variants below:")
+						if DEBUG then
+							print_r(variants)
+						end
+						local number_of_variants = #variants
+						local chosen_variant = math.random(number_of_variants)
+						final_item_section = variants[chosen_variant] or final_item_section
+						printdbg("Random variant chosen! random variant section is %s", final_item_section)
+					else
+						printdbg("No variants found!")
+					end
+					if final_item_section ~= item_section then
+						if ini_eff:section_exist(final_item_section) then
+							action.name = "fdda_anim_" .. final_item_section or action.name
+							action.sec = ini_eff:r_string_ex(final_item_section, "anm") .. "_hud" or action.sec
+							action.anm = "anm_ea_show" or action.anm
+							action.cam = ini_eff:r_string_ex(final_item_section, "cam") or action.cam
+							action.snd = ini_eff:r_string_ex(final_item_section, "snd") or action.snd
+							action.tm = (ini_eff:r_float_ex(final_item_section, "tm") / 1000) * 0.367 or action.tm
+							action.speed = ini_eff:r_float_ex(final_item_section, "speed") or 1
+							printdbg("animation settings swap successful! Swapped to %s", final_item_section)
+						end
+					else
+						printdbg("new item section does not exist or uses_allowed is false! new_item_section is %s, retaining old item section: %s", new_item_section, item_section)
+						printdbg("action.sec is %s", action.sec)
+					end
+                end
+            else
+				printdbg("ok is %s or uses is %s or action.sec:find('_hud$') is %s, one is unavaliable!", ok, uses, action.sec:find("_hud$"))
+            end
+            -- Clear pending for this section
+            pending_item_by_section[section] = nil
+        else
+			printdbg("item_id is %s or action is %s or action.sec is %s, one is unavaliable!", item_id, action, action.sec)
+        end
+        
+        return action
+    end
+    
+    printdbg("Hooked FDDA action template creation")
+    return true
+end
+--------------------------------------------------
+-- Delayed hook installation
+--------------------------------------------------
+local hooks_installed = false
+
+local function try_install_hook()
+    if hooks_installed then return end
+    
+    if hook_fdda() then
+        hooks_installed = true
+        UnregisterScriptCallback("actor_on_update", try_install_hook)
+        printdbg("Hook installed successfully")
+    end
+end
+--------------------------------------------------
+-- Init
+--------------------------------------------------
+function on_game_start()
+    RegisterScriptCallback("actor_on_update", try_install_hook)
+    
+    printdbg("Medkit HUD mutator loaded")
+	
+	--verdatim boo
+	RegisterScriptCallback("on_game_load", initialize)
+    RegisterScriptCallback("on_option_change", initialize)
+	
+	
+end
