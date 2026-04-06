@@ -70,7 +70,8 @@ Here's a sample section:
 	tm = 7250
 	helm = false
 
-Explanation
+Explanation:
+
 snd: its the sound played when using the item, just the direct path to the sound starting from the “sounds” folder
 
 anm: its the animation section but with "_hud" removed, needs to be created under mod_system_*.ltx, sample below. In this case the anm will point to "item_ga_flask_hud" and NOT "item_ga_flask", keep this in mind!
