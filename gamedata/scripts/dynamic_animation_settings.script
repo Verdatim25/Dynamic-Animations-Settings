@@ -128,7 +128,7 @@ end
 
 
 
-local DEBUG = true
+local DEBUG = false
 local function printdbg(fmt, ...)
     if DEBUG then
         printf("[Dynamic_animations] " .. string.format(fmt, ...))
